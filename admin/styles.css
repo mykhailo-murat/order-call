@@ -1,0 +1,12 @@
+.db {
+    display: flex;
+    flex-direction: column;
+}
+
+.db_row {
+    display: flex;
+}
+
+.db_row li {
+    margin-right: 20px;
+}
