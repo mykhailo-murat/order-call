@@ -1,12 +1,28 @@
-.db {
+.order-call__table-body{
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse;
+}
+.order-call__info{
+    margin-bottom: 50px;
 }
 
-.db_row {
-    display: flex;
+.order-call__table-row{
+    max-width: 800px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    background-color: #15172b;
 }
 
-.db_row li {
-    margin-right: 20px;
+.order-call__table-labels p {
+    font-weight: bold;
+    text-transform: uppercase;
+    color: white;
+}
+.dark-row {
+    background-color: #303245;
+}
+.order-call__table-row p {
+    padding: 5px 10px;
+    color: white;
 }
