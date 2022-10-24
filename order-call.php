@@ -98,8 +98,6 @@ class OrderCall
                 'phone' => $phone
             ));
             echo "Thanks $name for your request.<br>";
-        } else {
-            echo 'You need to fill all fields';
         }
     }
 
@@ -164,10 +162,8 @@ class OrderCall
 
 if (class_exists('OrderCall')) {
     $orderCall = new OrderCall();
-    if($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $formSub = new OrderCall();
-        $formSub->form_handler($_POST);
-        exit();
+    if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['name'], $_POST['email'], $_POST['phone'])) {
+        $orderCall->form_handler($_POST);
     }
 };
 
