@@ -24,6 +24,10 @@ class OrderCall
         add_action('wp_enqueue_scripts', [$this, 'enqueue_front']);
 
         add_action('admin_menu', [$this, 'add_admin_page']);
+
+        add_action( 'wp_ajax_nopriv_send_form_ajax', array( $this, 'send_form_ajax' ) );
+        add_action( 'wp_ajax_send_form_ajax', array( $this, 'send_form_ajax' ) );
+
     }
 
     function insert_table_into_db()
@@ -57,24 +61,35 @@ class OrderCall
     public function enqueue_front()
     {
         wp_enqueue_style('ordercallStyle', plugins_url('/styles.css', __FILE__));
-        wp_enqueue_script('ordercallScript', plugins_url('/scripts.js', __FILE__));
+        wp_enqueue_script('ordercallScript', plugins_url('/scripts.js', __FILE__), array('jquery'), null, true);
+
+        wp_localize_script( 'ordercallScript', 'localize',
+            array(
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'ajax_nonce' => wp_create_nonce( 'ajax_nonce' ),
+                'error'      => __( 'Sorry, something went wrong. Please try again', 'default')
+            )
+        );
     }
 
 
     static function order_call_form()
     {
-        ob_start(); ?>
+        ob_start();
+        $nonce = wp_create_nonce( 'send_form_ajax_');
+        ?>
         <div class="order-call">
-            <form class="order-call__form" action="<? echo $_SERVER['PHP_SELF']?>" method="post">
-                <h3 class="order-call__form-title">We can call u</h3>
+            <form class="order-call__form" action="" method="post" data-nonce ="<?php echo $nonce;?>">
+                <h3 class="order-call__form-title"> <?php esc_html_e('We can call u', 'default'); ?></h3>
                 <input class="order-call__form-input" type="text" name="name" required="required"
                        placeholder="Enter your name"/>
                 <input class="order-call__form-input" type="email" name="email" required="required"
                        placeholder="Enter your email"/>
                 <input class="order-call__form-input" type="tel" name="phone" required="required"
                        placeholder="Enter your phone"/>
-                <button class="order-call__form-submit" name="submit" type="submit">request a call</button>
+                <button class="order-call__form-submit" name="submit" type="submit"><?php esc_html_e('request a call', 'default'); ?></button>
             </form>
+            <div class="order-call__response"></div>
         </div>
         <?php
         $out = ob_get_clean();
@@ -82,14 +97,19 @@ class OrderCall
         return $out;
     }
 
-    public static function form_handler($postArray)
-    {
+    public static function send_form_ajax() {
+        $postArray = $_POST;
+
+        if ( check_ajax_referer( 'send_form_ajax_', 'nonce', false ) == false ) {
+            wp_send_json_error();
+        }
+
         if (isset($postArray['name'], $postArray['email'], $postArray['phone'])) {
             global $wpdb;
             $date = date('Y/m/d H:i:s');
-            $name = $_REQUEST['name'];
-            $email = $_REQUEST['email'];
-            $phone = $_REQUEST['phone'];
+            $name = sanitize_text_field($_REQUEST['name']);
+            $email = sanitize_email($_REQUEST['email']);
+            $phone = sanitize_phone_number($_REQUEST['phone']);
             $table_name = $wpdb->prefix . 'ordercall_table';
             $wpdb->insert($table_name, array(
                 'date' => $date,
@@ -97,7 +117,9 @@ class OrderCall
                 'email' => $email,
                 'phone' => $phone
             ));
-            echo "Thanks $name for your request.<br>";
+            wp_send_json_success( __( "Thanks $name for your request.", 'default' ) );
+        } else {
+            wp_send_json_error();
         }
     }
 
@@ -160,11 +182,12 @@ class OrderCall
     }
 }
 
+function sanitize_phone_number( $phone ) {
+    return preg_replace( '/[^\d+]/', '', $phone );
+}
+
 if (class_exists('OrderCall')) {
     $orderCall = new OrderCall();
-    if($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['name'], $_POST['email'], $_POST['phone'])) {
-        $orderCall->form_handler($_POST);
-    }
 };
 
 register_activation_hook(__FILE__, array($orderCall, 'insert_table_into_db'));
