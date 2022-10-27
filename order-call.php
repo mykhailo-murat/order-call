@@ -100,7 +100,7 @@ class OrderCall
     public static function send_form_ajax() {
         $postArray = $_POST;
 
-        if ( check_ajax_referer( 'send_form_ajax_', 'nonce', false ) == false ) {
+        if ( !isset($postArray['nonce']) || !wp_verify_nonce($postArray['nonce'], 'send_form_ajax_')) {
             wp_send_json_error();
         }
 
@@ -118,8 +118,6 @@ class OrderCall
                 'phone' => $phone
             ));
             wp_send_json_success( __( "Thanks $name for your request.", 'default' ) );
-        } else {
-            wp_send_json_error();
         }
     }
 
